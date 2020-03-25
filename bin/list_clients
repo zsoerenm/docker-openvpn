@@ -6,7 +6,7 @@ else
     cat /etc/ovpn/pki/ca.crt > /etc/ovpn/pki/cacheck.pem
 fi
 
-echo "name" $'\t' "begin" $'\t' "end" $'\t' "status"
+echo "Name" $'\t' "Begin of certificate" $'\t' "End of certificate" $'\t' "Status"
 for name in /etc/ovpn/pki/issued/*.crt; do
     path=$name
     begin=$(openssl x509 -noout -startdate -in $path | awk -F= '{ print $2 }')
