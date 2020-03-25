@@ -1,0 +1,55 @@
+#!/bin/bash
+
+#
+# Get an OpenVPN client configuration file
+#
+
+if [ "$DEBUG" == "1" ]; then
+    set -x
+fi
+
+set -e
+
+username="$1"
+
+if [ ! -f "/etc/ovpn/pki/private/${username}.key" ]; then
+    echo "Unable to find \"${username}\", please generate the key first:
+    docker run --rm -it -v ovpn_pki_data:/etc/ovpn zsoerenm/openvpn create_user_cert \"${username}\" nopass" >&2
+    exit 1
+fi
+
+echo "
+client
+nobind
+dev $OVPN_MODE
+remote-cert-tls server
+proto $OVPN_PROTOCOL
+remote $SERVER_ADDRESS $OVPN_CLIENT_PORT
+<key>
+$(cat /etc/ovpn/pki/private/${username}.key)
+</key>
+<cert>
+$(openssl x509 -in /etc/ovpn/pki/issued/${username}.crt)
+</cert>
+<ca>
+$(cat /etc/ovpn/pki/ca.crt)
+</ca>
+key-direction 1
+<tls-auth>
+$(cat /etc/ovpn/pki/ta.key)
+</tls-auth>
+"
+
+if [ "$PUSH_REDIRECT_GATEWAY_DEF1_BYPASS_DHCP" == "1" ]; then
+    echo "redirect-gateway def1 bypass-dhcp"
+elif [ "$PUSH_REDIRECT_GATEWAY_DEF1" == "1" ]; then
+    echo "redirect-gateway def1"
+fi
+
+if [ -n "$OVPN_CIPHER" ]; then
+    echo "cipher $OVPN_CIPHER"
+fi
+
+if [ "$OVPN_COMPRESS" == "1" ]; then
+    echo "compress lz4-v2"
+fi

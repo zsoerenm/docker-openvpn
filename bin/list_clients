@@ -1,35 +1,22 @@
 #!/bin/bash
 
-if [ -z "$OPENVPN" ]; then
-    export OPENVPN="$PWD"
-fi
-if ! source "$OPENVPN/ovpn_env.sh"; then
-    echo "Could not source $OPENVPN/ovpn_env.sh."
-    exit 1
-fi
-if [ -z "$EASYRSA_PKI" ]; then
-    export EASYRSA_PKI="$OPENVPN/pki"
-fi
-
-cd "$EASYRSA_PKI"
-
-if [ -e crl.pem ]; then
-    cat ca.crt crl.pem > cacheck.pem
+if [ -e /etc/ovpn/pki/crl.pem ]; then
+    cat /etc/ovpn/pki/ca.crt /etc/ovpn/pki/crl.pem > /etc/ovpn/pki/cacheck.pem
 else
-    cat ca.crt > cacheck.pem
+    cat /etc/ovpn/pki/ca.crt > /etc/ovpn/pki/cacheck.pem
 fi
 
-echo "name,begin,end,status"
-for name in issued/*.crt; do
+echo "name" $'\t' "begin" $'\t' "end" $'\t' "status"
+for name in /etc/ovpn/pki/issued/*.crt; do
     path=$name
     begin=$(openssl x509 -noout -startdate -in $path | awk -F= '{ print $2 }')
     end=$(openssl x509 -noout -enddate -in $path | awk -F= '{ print $2 }')
 
     name=${name%.crt}
-    name=${name#issued/}
-    if [ "$name" != "$OVPN_CN" ]; then
+    name=${name#/etc/ovpn/pki/issued/}
+    if [ "$name" != "myserverkey" ]; then
         # check for revocation or expiration
-        command="openssl verify -crl_check -CAfile cacheck.pem $path"
+        command="openssl verify -CAfile /etc/ovpn/pki/cacheck.pem -crl_check $path"
         result=$($command)
         if [ $(echo "$result" | wc -l) == 1 ] && [ "$(echo "$result" | grep ": OK")" ]; then
             status="VALID"
@@ -46,9 +33,9 @@ for name in issued/*.crt; do
                     status="INVALID"
             esac
         fi
-        echo "$name,$begin,$end,$status"
+        echo $name $'\t' $begin $'\t' $end $'\t' $status
     fi
 done
 
 # Clean
-rm cacheck.pem
+rm /etc/ovpn/pki/cacheck.pem

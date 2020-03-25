@@ -1,0 +1,28 @@
+#!/bin/bash
+
+#
+# Initialize the EasyRSA PKI
+#
+
+if [ "$DEBUG" == "1" ]; then
+  set -x
+fi
+
+set -e
+
+# Provides a sufficient warning before erasing pre-existing files
+/usr/share/easy-rsa/easyrsa --pki-dir=/etc/ovpn/pki init-pki
+
+# CA always has a password for protection in event server is compromised. The
+# password is only needed to sign client/server certificates.  No password is
+# needed for normal OpenVPN operation.
+/usr/share/easy-rsa/easyrsa --pki-dir=/etc/ovpn/pki build-ca $1
+
+/usr/share/easy-rsa/easyrsa --pki-dir=/etc/ovpn/pki gen-dh
+openvpn --genkey --secret /etc/ovpn/pki/ta.key
+
+# For a server key with a password, manually init; this is autopilot
+/usr/share/easy-rsa/easyrsa --pki-dir=/etc/ovpn/pki build-server-full myserverkey nopass
+
+# Generate the CRL for client/server certificates revocation.
+/usr/share/easy-rsa/easyrsa --pki-dir=/etc/ovpn/pki gen-crl

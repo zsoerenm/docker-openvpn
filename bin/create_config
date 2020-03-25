@@ -1,0 +1,67 @@
+#!/bin/bash
+
+#
+# Run the OpenVPN server normally
+#
+
+if [ "$DEBUG" == "1" ]; then
+  set -x
+fi
+
+set -e
+
+if [ "$SERVER_BRIDGE" == "1" ]; then
+    echo "server-bridge $SERVER_BRIDGE_IP $SERVER_BRIDGE_NETMASK $SERVER_BRIDGE_DHCP_START $SERVER_BRIDGE_DHCP_END" > /etc/openvpn/openvpn.conf
+    OVPN_MODE=tap
+else
+    echo "server $SERVER_INTERNAL_IP $SERVER_INTERNAL_NETMASK" > /etc/openvpn/openvpn.conf
+fi
+
+cat >> /etc/openvpn/openvpn.conf <<EOF
+verb $OVPN_VERB
+key ${OVPN_PRIVATE_KEY_FILE}
+ca ${OVPN_CA_KEY_FILE}
+cert ${OVPN_ISSUED_KEY_FILE}
+dh ${OVPN_DH_KEY_FILE}
+tls-auth $OVPN_TLS_AUTH
+topology $OVPN_TOPOLOGY
+ifconfig-pool-persist ipp.txt
+keepalive $OVPN_KEEPALIVE
+persist-key
+persist-tun
+
+proto $OVPN_PROTOCOL
+port 1194
+dev $OVPN_MODE
+status /tmp/openvpn-status.log
+
+user nobody
+group nogroup
+
+cipher $OVPN_CIPHER
+mute $OVPN_MUTE
+explicit-exit-notify $OVPN_EXPLICIT_EXIT_NOTIFY
+
+EOF
+
+for dns in ${PUSH_DNS//,/ }
+do
+    echo "push \"dhcp-option DNS $dns\"" >> /etc/openvpn/openvpn.conf
+done
+
+if [ "$PUSH_REDIRECT_GATEWAY_DEF1_BYPASS_DHCP" == "1" ]; then
+    echo "push \"redirect-gateway def1 bypass-dhcp\"" >> /etc/openvpn/openvpn.conf
+elif [ "$PUSH_REDIRECT_GATEWAY_DEF1" == "1" ]; then
+    echo "push \"redirect-gateway def1\"" >> /etc/openvpn/openvpn.conf
+fi
+
+if [ "$CLIENT_TO_CLIENT" == "1" ]; then
+    echo "client-to-client" >> /etc/openvpn/openvpn.conf
+fi
+
+if [ "$OVPN_COMPRESS" == "1" ]; then
+    echo "compress lz4-v2" >> /etc/openvpn/openvpn.conf
+    echo "push \"compress lz4-v2\"" >> /etc/openvpn/openvpn.conf
+fi
+
+exec "$@"

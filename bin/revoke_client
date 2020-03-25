@@ -1,0 +1,29 @@
+#!/bin/bash
+
+#
+# Revoke a client certificate
+#
+
+if [ "$DEBUG" == "1" ]; then
+    set -x
+fi
+
+set -e
+
+username="$1"
+param="$2"
+
+if [ ! -f "/etc/ovpn/pki/private/${username}.key" ]; then
+    echo "Unable to find \"${username}\"" >&2
+    exit 1
+fi
+
+/usr/share/easy-rsa/easyrsa --pki-dir=/etc/ovpn/pki revoke $username
+echo "Generating the Certificate Revocation List :"
+/usr/share/easy-rsa/easyrsa --pki-dir=/etc/ovpn/pki gen-crl
+
+if [ "$param" == "remove" ]; then
+    rm -v "/etc/ovpn/pki/issued/${username}.crt"
+    rm -v "/etc/ovpn/pki/private/${username}.key"
+    rm -v "/etc/ovpn/pki/reqs/${username}.req"
+fi
