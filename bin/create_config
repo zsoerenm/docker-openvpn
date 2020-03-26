@@ -26,7 +26,7 @@ dh ${OVPN_DH_KEY_FILE}
 tls-auth $OVPN_TLS_AUTH
 key-direction 0
 topology $OVPN_TOPOLOGY
-ifconfig-pool-persist ipp.txt
+ifconfig-pool-persist /etc/ovpn/ipp.txt
 keepalive $OVPN_KEEPALIVE
 persist-key
 persist-tun
