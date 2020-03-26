@@ -37,5 +37,13 @@ if [ $? = 0 ]; then
     sysctl -w net.ipv6.conf.all.forwarding=1 || echo "Failed to enable IPv6 Forwarding"
 fi
 
+if [ "$SERVER_BRIDGE" == "1" ]; then
+    openvpn --mktun --dev tap0
+
+    ifconfig tap0 $SERVER_BRIDGE_IP netmask $SERVER_BRIDGE_NETMASK broadcast $SERVER_BRIDGE_BROADCAST
+
+    iptables -A INPUT -i tap0 -j ACCEPT
+fi
+
 echo "Running 'openvpn $params'"
 exec openvpn $params

@@ -33,7 +33,6 @@ persist-tun
 
 proto $OVPN_PROTOCOL
 port 1194
-dev $OVPN_MODE
 status /tmp/openvpn-status.log
 
 user nobody
@@ -44,6 +43,12 @@ mute $OVPN_MUTE
 explicit-exit-notify $OVPN_EXPLICIT_EXIT_NOTIFY
 
 EOF
+
+if [ "$SERVER_BRIDGE" == "1" ]; then
+    echo "dev tap0" >> /etc/openvpn/openvpn.conf
+else
+    echo "dev $OVPN_MODE" >> /etc/openvpn/openvpn.conf
+fi
 
 for dns in ${PUSH_DNS//,/ }
 do

@@ -21,6 +21,7 @@ fi
 echo "
 client
 nobind
+auth-nocache
 dev $OVPN_MODE
 remote-cert-tls server
 proto $OVPN_PROTOCOL
