@@ -65,17 +65,21 @@ of OpenVPN might be of interest.
 version: '2'
 services:
   openvpn:
+    image: zsoerenm/openvpn
     privileged: true
     cap_add:
      - NET_ADMIN
-    image: zsoerenm/openvpn
     ports:
      - "1194:1194/udp"
     restart: unless-stopped
     environment:
      - SERVER_ADDRESS=vpn.example.com
+     - CLIENT_TO_CLIENT=1
+     - SERVER_BRIDGE=1
     volumes:
      - ovpn_pki_data:/etc/ovpn
+volumes:
+  ovpn_pki_data:
 ```
 
 ## Miscellaneous
